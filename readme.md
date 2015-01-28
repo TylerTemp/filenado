@@ -30,7 +30,7 @@ Options:
 -l --logging=<level>      log level, can be "DEBUG", "INOF", "WARNING", "ERROR", "CRITICAL", or number from 0 to 50[default: INFO]
 ```
 
-Note that if none of <path>, --root and "sharepath"(in "config.json")  is presented, it will shared the current working dir.
+Note that if none of \<path\>, --root and "sharepath"(in "config.json")  is presented, it will shared the current working dir.
 
 
 Licence
