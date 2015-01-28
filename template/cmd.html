@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title%}Run a command{% end %}
+{% block body %}
+	<h1>Run a command{% if cmd %}{{ cmd }}{% end %}</h1>
+	{% if out %}
+	<p><b>out: </b></p>
+	<pre>{{ out }}</pre>
+	{% end %}
+	{% if err %}
+	<p><b>err: </b></p>
+	<pre>{{ err }}</pre>
+	{% end %}
+{% end %}
+{% block cmd %}
+	<form action="/cmd" method="GET">
+		<input type="text" name="cmd"/>
+		<br />
+		<input type="submit" value="提交" />
+	</form>
+{% end %}

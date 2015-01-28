@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title%}Detail - {{ path }}{% end %}
+{% block body %}
+	<h1>{{ path }}</h1>
+	{% for type in ("folder", "image", "video", "unknown") %}
+	{# for type, files in detail.items() #}
+		{% set files = detail.get(type, []) %}
+		{% for file in files %}
+			{% if type == "folder" %}
+			<div class="container folder">
+				{% module Folder(**file) %}
+			</div>
+			{% elif type == "image" %}
+			<div class="container image">
+				{% module Image(**file) %}
+			</div>
+			{% elif type == "video" %}
+			<div class="container video">
+				{% module Video(**file) %}
+			</div>
+			{% elif type == "audio" %}
+			<div class="container audio">
+				{% module Video(**file) %}
+			</div>
+			{% elif type == "unknown" %}
+			<div class="container unknown">
+				{% module Unknown(**file) %}
+			</div>
+			{% end %}
+		{% end %}
+	{% end %}
+{% end %}

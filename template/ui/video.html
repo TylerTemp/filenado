@@ -1,0 +1,5 @@
+<video width="320" height="240" controls {% if poster %} poster="{{ poster }}" {% end %}>
+	<source src="{{ link }}" {% if mimetype %} type="{{ mimetype }}"{% end %}>
+	Not Support.
+</video>
+<a href="{{ link }}">{{ name }}</a><span>{{ size }}</span>
