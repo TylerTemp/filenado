@@ -46,7 +46,7 @@ def split_endname(paths):
         if each == '/':
             rtn.append(('/', ''))
             continue
-        elif each.endswith('://'):
+        elif each.endswith(':/'):
             rtn.append((each, ''))
             continue
         elif each.endswith('/'):
@@ -55,7 +55,7 @@ def split_endname(paths):
         if each.startswith('/') and (each.count('/')==1):
             # '/home' -> ('/', 'home')
             rtn.append(('/', each[1:]))
-        elif '://' in each and (each.count('/')==2):
+        elif ':/' in each and (each.count('/')==2):
             # 'C://path' -> ('C://', 'path')
             # 'C://' -> ('C://', '') <- this will not get there
             idx = each.find('://')+3
@@ -77,9 +77,9 @@ if __name__ == '__main__':
         '/home/tyler',
         '/home/tyler/',
 
-        'C://',
-        'C://Program Files (x86)',
-        'C://Program Files (x86)/',
+        'C:\\',
+        'C:\\Program Files (x86)',
+        'C:\\Program Files (x86)/',
     ]
 
     expect = [
@@ -89,9 +89,9 @@ if __name__ == '__main__':
         ('/home', 'tyler'),
         ('/home', 'tyler'),
 
-        ('C://', ''),
-        ('C://', 'Program Files (x86)'),
-        ('C://', 'Program Files (x86)'),
+        ('C:/', ''),
+        ('C:/', 'Program Files (x86)'),
+        ('C:/', 'Program Files (x86)'),
     ]
 
     result = split_endname(value)
