@@ -104,10 +104,6 @@ class FolderHandler(_Handler):
 
         for eachdir in dirnames:
             thispath = '/'.join((path, eachdir))
-            # for p in ignore:
-            #     if fnmatch.fnmatch(eachdir+'/', p):
-            #         logger.error('%s -> %s', eachdir+'/', p)
-            #         break
             if any(map(lambda p: fnmatch.fnmatch(eachdir+'/', p), ignore)):
                 logger.debug('%s is ignored', thispath)
                 continue
