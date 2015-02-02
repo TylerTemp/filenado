@@ -4,6 +4,7 @@ import tornado.gen
 import tornado.iostream
 import logging
 import mimetypes
+import fnmatch
 
 try:
     from urllib.parse import unquote
@@ -28,8 +29,14 @@ class _Handler(BaseHandler):
         pathfolder = self.application.path_folder
         if idx >= len(pathfolder):
             logger.debug('idx %s out of range for %s', idx, pathfolder)
-        root, folder = pathfolder[int(idx)]
-        path = '/'.join((root, folder)) if folder else root
+            raise tornado.web.HTTPError(404)
+        root, folder = pathfolder[idx]
+        if root == '/':    # '/', 'home'
+            path = root + folder
+        elif folder:    # '/home', 'tyler'
+            path = '/'.join((root, folder))
+        else:   # '/', ''; 'C:', ''
+            path = root
         path = '/'.join((path, sub)) if sub is not None else path
         return path
 
@@ -58,7 +65,7 @@ class _Handler(BaseHandler):
             if poster:
                 attrs['poster'] =  poster
         attrs.update(extradict)
-        logger.debug(attrs)
+        # logger.debug(attrs)
         targetlist.append(attrs)
 
 class HomeHandler(_Handler):
@@ -77,8 +84,11 @@ class HomeHandler(_Handler):
 
 class FolderHandler(_Handler):
     def get(self, idx, subfoler=None):
-        if subfoler is not None:
+        if subfoler is None:
+            upper = False
+        else:
             subfoler = unquote(subfoler)
+            upper = True
         path = self._get_path(idx, subfoler)
         if os.path.isfile(path):
             uri = self.request.uri
@@ -90,20 +100,33 @@ class FolderHandler(_Handler):
             raise tornado.web.HTTPError(500, '%s has no related folder'%uri)
 
         detail = {}
-        for dirpath, dirnames, filenames in os.walk(path):
-            break
+
+        # listdir will not seperate the folders and files
+        dirpath, dirnames, filenames = next(os.walk(path))
+        ignore = self.application.ignore
+
         for eachdir in dirnames:
             thispath = '/'.join((path, eachdir))
+            # for p in ignore:
+            #     if fnmatch.fnmatch(eachdir+'/', p):
+            #         logger.error('%s -> %s', eachdir+'/', p)
+            #         break
+            if any(map(lambda p: fnmatch.fnmatch(eachdir+'/', p), ignore)):
+                logger.debug('%s is ignored', thispath)
+                continue
             link = eachdir+'/'
             self.make_attr(thispath, detail, {'link': link, 'name': eachdir})
         for eachfile in filenames:
+            if any(map(lambda p: fnmatch.fnmatch(eachfile, p), ignore)):
+                logger.debug('%s is ignored', eachfile)
+                continue
             thispath = '/'.join((path, eachfile))
             self.make_attr(thispath, detail, {'link': eachfile, 'name': eachfile})
+        
+        detail.setdefault('folder', []).insert(0, {'name': '..', 'link': '../', 'poster':self.application.icon['folder']})
         return self.render('show.html', detail=detail, path=path)
 
 class FileHandler(_Handler):#, tornado.web.StaticFileHandler):
-    def initialize(self):
-        pass
 
     @tornado.gen.coroutine
     def get(self, idx, subfoler=None):

@@ -39,15 +39,14 @@ from lib.bashlog import getlogger
 from lib.bashlog import DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 # remove default tornado logger settings
-_t_log = logging.getLogger('tornado')
-for _hdlr in _t_log.handlers:
-    _t_log.removeHandler(_hdlr)
+tornadologger = logging.getLogger('tornado')
+for _hdlr in tornadologger.handlers:
+    tornadologger.removeHandler(_hdlr)
 
-    for _filter in _t_log.filters:
-        _t_log.removeFilter(_filter)
+    for _filter in tornadologger.filters:
+        tornadologger.removeFilter(_filter)
 
-del _t_log
-logger = logging.getLogger('filenado.main')
+logger = logging.getLogger('filenado')
 
 
 class Application(tornado.web.Application):
@@ -58,7 +57,7 @@ class Application(tornado.web.Application):
         self.path_folder = setting.pop('path_folder')
         handlers = [
             (r'^/$', RootHandler),
-            # (r'^/cmd/$', CmdHandler),    # an example
+            # (r'^/cmd/?$', CmdHandler),    # an example
             (r'^/home/$', HomeHandler),
             (r'^/home/(\d+)/$', FolderHandler),    # shared folders may have same name under different folder 
             (r'^/home/(\d+)$', FileHandler),    # so use number instead of name
@@ -117,7 +116,7 @@ if __name__ == "__main__":
     else:
         level = dict(debug=DEBUG, info=INFO, warning=WARNING, critical=CRITICAL)[level.lower()]
     getlogger(logger, level, True)
-    getlogger('tornado', level, True)
+    getlogger(tornadologger, level, True)
 
     this_dir = os.path.dirname(__file__)
     with open(os.path.join(this_dir, 'config.json'), 'r', encoding='utf-8') as f:
@@ -138,7 +137,7 @@ if __name__ == "__main__":
     if not all(map(os.path.exists, folders)):
         raise SystemExit("some path(%s) not found"%folders)
 
-    setting['path_folder'] = split_endname(folders)
+    setting['path_folder'] = [split_endname(path) for path in folders]
 
     logger.info('share file %s', setting['path_folder'])
 

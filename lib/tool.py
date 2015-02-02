@@ -3,6 +3,7 @@ import sys
 py3 = (sys.version_info[0] >= 3)
 py2 = (not py3)
 
+
 if not py3:
     import codecs
     import warnings
@@ -37,33 +38,25 @@ def size(b):
         return '%.2f%s'%(b, suffix)
 
 
-def split_endname(paths):
+def split_endname(path):
     # related path not support.
-    rtn = []
-    for each in paths:
-        each.replace('\\', '/')
-        # '/'
-        if each == '/':
-            rtn.append(('/', ''))
-            continue
-        elif each.endswith(':/'):
-            rtn.append((each, ''))
-            continue
-        elif each.endswith('/'):
-            each = each[:-1]
+    path = path.replace('\\', '/')
+    # '/'
+    if path == '/':
+        return ('/', '')
+    
+    # /home/ -> /home; C:/ -> C:
+    if path.endswith('/'):
+        path = path[:-1]
 
-        if each.startswith('/') and (each.count('/')==1):
-            # '/home' -> ('/', 'home')
-            rtn.append(('/', each[1:]))
-        elif ':/' in each and (each.count('/')==2):
-            # 'C://path' -> ('C://', 'path')
-            # 'C://' -> ('C://', '') <- this will not get there
-            idx = each.find('://')+3
-            rtn.append((each[:idx], each[idx:]))
-        # '/home/tyler/', '/home/tyler/'
-        else:
-            rtn.append(tuple(each.rsplit('/', 1)))
-    return rtn
+    if path.startswith('/') and (path.count('/')==1):
+        # '/home' -> ('/', 'home')
+        return ('/', path[1:])
+
+    if path.endswith(':'):
+        return (path, '')
+    
+    return tuple(path.rsplit('/', 1))
 
 
 if __name__ == '__main__':
@@ -79,7 +72,7 @@ if __name__ == '__main__':
 
         'C:\\',
         'C:\\Program Files (x86)',
-        'C:\\Program Files (x86)/',
+        'C:\\Program Files (x86)\\',
     ]
 
     expect = [
@@ -89,12 +82,12 @@ if __name__ == '__main__':
         ('/home', 'tyler'),
         ('/home', 'tyler'),
 
-        ('C:/', ''),
-        ('C:/', 'Program Files (x86)'),
-        ('C:/', 'Program Files (x86)'),
+        ('C:', ''),
+        ('C:', 'Program Files (x86)'),
+        ('C:', 'Program Files (x86)'),
     ]
 
-    result = split_endname(value)
-    for v, e, r in zip(value, expect, result):
-        print(v, e, r)
-        assert e == r
+    for v, e in zip(value, expect):
+        result = split_endname(v)
+        print('%s -> %s (expect: %s)'%(v, result, e))
+        assert(result == e)

@@ -3,7 +3,7 @@
 	"xsrf_cookie": false,
 	"cookie_secret": null,
 	"sharepath": [],
-	"ignore": [".ini", ".psd", ".cfg", ".srt", ".torrent", ".psd", ".ssa", ".db", ".py"],
+	"ignore": [".*", "~*"],
 	"icon": {
 		"folder": "/static/icon/folder.png",
 		"unknown": "/static/icon/unknown.png"

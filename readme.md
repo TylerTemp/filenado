@@ -51,3 +51,5 @@ TODO
 ------------
 
 * add seaching files
+* add updating files
+* add deleting files
