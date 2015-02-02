@@ -84,11 +84,8 @@ class HomeHandler(_Handler):
 
 class FolderHandler(_Handler):
     def get(self, idx, subfoler=None):
-        if subfoler is None:
-            upper = False
-        else:
+        if subfoler is not None:
             subfoler = unquote(subfoler)
-            upper = True
         path = self._get_path(idx, subfoler)
         if os.path.isfile(path):
             uri = self.request.uri
