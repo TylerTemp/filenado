@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}search - {{ folder[0] }}{% end %}
+{% block body %}
+
+<p><b>{{ info }}</b> If you get a time-out, allow cache and refresh please.</p>
+
+<p><a href="{{ switch_link }}">switch to {{ toname }} match style</a> | <a href="./?refresh=true">clean cache</a></p>
+
+<p>You're searching <a href="{{ folder[1] }}">{{ folder[0] }}</a></p>
+
+
+<form action="./" method="GET">
+	<fieldset>
+		<legend>{{ rule.upper() }} SEARCH:</legend>
+		pattern:<br />
+		<input name="pattern" type="text" value="{{ pattern }}"><br />
+		depth(Number. 0 for no-limit):<br />
+		<input name="limit" type="text" value="{{ limit }}"><br />
+		case-sensitivity: 
+		{% if rule.lower() == "fn" %}
+			{% if windows %}
+				Insensitive
+				<input name="sensitivity" value="insensitive" style="display:none"/>
+			{% else %}
+				<select name="sensitivity">
+					<option value="insensitive" {% if default == "insensitive"%}selected="selected"{% end %}>Insensitive</option>
+					<option value="sensitive" {% if default == "default"%}selected="selected"{% end %}>Sensitive</option>
+				</select>
+			{% end %}
+		{% else %}
+			<select name="sensitive">
+				<option value="insensitive"{% if default == "insensitive" %}selected="selected"{% end %}>Insensitive</option>
+				<option value="sensitive"{% if default == "sensitive" %}selected="selected"{% end %}>Sensetive</option>
+			</select>
+		{% end %}
+		<br />
+		<input type="checkbox" name="nocache"/><span>no cache</span>
+		<br />
+		<input type="submit" value="Submit" />
+	</fieldset>
+</form>
+
+{% if result is None %}
+
+{% elif result %}
+	{% for type in ("image", "video", "audio", "unknown") %}
+		{% set files = result.get(type, []) %}
+		{% for file in files %}
+			{% if type == "folder" %}
+				<div class="container folder">
+				{% module Folder(**file) %}
+				</div>
+			{% elif type == "image" %}
+				<div class="container image">
+				{% module Image(**file) %}
+				</div>
+			{% elif type == "video" %}
+				<div class="container video">
+				{% module Video(**file) %}
+				</div>
+			{% elif type == "audio" %}
+				<div class="container audio">
+				{% module Video(**file) %}
+				</div>
+			{% elif type == "unknown" %}
+				<div class="container unknown">
+				{% module Unknown(**file) %}
+				</div>
+			{% end %}
+		{% end %}
+	{% end %}
+
+{% else %}
+<p>No match</p>
+{% end %}
+
+
+{% end %}

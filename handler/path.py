@@ -6,6 +6,7 @@ import logging
 import mimetypes
 import fnmatch
 
+
 try:
     from urllib.parse import unquote
 except ImportError:
@@ -15,118 +16,83 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from handler.base import BaseHandler
-from lib.tool import size
+from lib.tool import format_size
 sys.path.pop(0)
 
 logger = logging.getLogger('filenado.path')
 
-class _Handler(BaseHandler):
-    def _get_path(self, idx, sub=None):
-        if not idx.isdigit():
-            logger.debug('idx %s must be digit', idx)
-            raise tornado.web.HTTPError(404)
-        idx = int(idx)
-        pathfolder = self.application.path_folder
-        if idx >= len(pathfolder):
-            logger.debug('idx %s out of range for %s', idx, pathfolder)
-            raise tornado.web.HTTPError(404)
-        root, folder = pathfolder[idx]
-        if root == '/':    # '/', 'home'
-            path = root + folder
-        elif folder:    # '/home', 'tyler'
-            path = '/'.join((root, folder))
-        else:   # '/', ''; 'C:', ''
-            path = root
-        path = '/'.join((path, sub)) if sub is not None else path
-        return path
 
-    def make_attr(self, path, targetdict, extradict={}):
-        icon = self.application.icon
-        if os.path.isdir(path):
-            targetlist = targetdict.setdefault('folder', [])
-            attrs = {'name': os.path.split(path)[-1],
-                     'poster': icon['folder']}
-        else:
-            attrs = {'size': size(os.path.getsize(path))}
-            mime, _ = mimetypes.guess_type(path)
-            poster = None
-            if mime is None:
-                targetlist = targetdict.setdefault('unknown', [])
-                poster = icon['unknown']
-            elif mime.startswith('image'):
-                targetlist = targetdict.setdefault('image', [])
-            elif mime.startswith('audio'):
-                targetlist = targetdict.setdefault('audio', [])
-            elif mime.startswith('video'):
-                targetlist = targetdict.setdefault('video', [])
-            else:
-                targetlist = targetdict.setdefault('unknown', [])
-                poster = icon['unknown']
-            if poster:
-                attrs['poster'] =  poster
-        attrs.update(extradict)
-        # logger.debug(attrs)
-        targetlist.append(attrs)
-
-class HomeHandler(_Handler):
+class HomeHandler(BaseHandler):
     def get(self):
         icon = self.application.icon['folder']
         shared = {}
-        for idx, root_path in enumerate(self.application.path_folder):
-            path = '/'.join(root_path) if root_path[1] else root_path[0]
-            name = root_path[1] or root_path[0]
+        for idx, path in enumerate(self.application.paths):
+            dirname, name = os.path.split(path)
+            if not name:
+                name = dirname
             if os.path.isdir(path):
-                link = str(idx)+'/'
+                link = './%s/'%idx
             else:
-                link = str(idx)
+                link = './%s'%idx
             self.make_attr(path, shared, {'link': link, 'name': name, 'abspath': path})
-        return self.render('home.html', detail=shared)
+        
+        _, idx, sub = self.get_act_idx_sub()
+        switch = {}
+        switch['Unix-Shell'] = '/'.join(('/fn', idx))
+        switch['Regular'] = '/'.join(('/re', idx))
 
-class FolderHandler(_Handler):
-    def get(self, idx, subfoler=None):
-        if subfoler is not None:
-            subfoler = unquote(subfoler)
-        path = self._get_path(idx, subfoler)
-        if os.path.isfile(path):
-            uri = self.request.uri
-            if not uri.endswith('/'):
-                return self.redirect(uri+'/')
-            logger.error('%s has no related folder or file', uri)
-            raise tornado.web.HTTPError(500, '%s has no related folder or file'%uri)
-        if not os.path.isdir(path):
-            raise tornado.web.HTTPError(500, '%s has no related folder'%uri)
+        return self.render('home.html', detail=shared, search=switch)
 
+
+class FolderHandler(BaseHandler):
+
+    def get(self):
+        path = self.get_path()
+        uri = self.request.uri
+        if os.path.isfile(path) and not uri.endswith('/'):
+            return self.redirect(uri[:-1])
+
+        detail = self.parse_folder(path)
+        detail.setdefault('folder', []).insert(0, {'name': '..', 'link': '../', 'poster':self.application.icon['folder']})
+        _, idx, sub = self.get_act_idx_sub()
+        switch = {}
+        switch['Unix-Shell'] = '/'.join(('/fn', idx, sub))
+        switch['Regular'] = '/'.join(('/re', idx, sub))
+        return self.render('show.html', detail=detail, path=path, search=switch)
+
+    def parse_folder(self, path):
         detail = {}
-
+        _, idx, sub = self.get_act_idx_sub()
         # listdir will not seperate the folders and files
         dirpath, dirnames, filenames = next(os.walk(path))
         ignore = self.application.ignore
 
         for eachdir in dirnames:
             thispath = '/'.join((path, eachdir))
-            if any(map(lambda p: fnmatch.fnmatch(eachdir+'/', p), ignore)):
+            if ignore and any(map(lambda p: fnmatch.fnmatch(eachdir+'/', p), ignore)):
                 logger.debug('%s is ignored', thispath)
                 continue
-            link = eachdir+'/'
+            link = './%s/'%eachdir
             self.make_attr(thispath, detail, {'link': link, 'name': eachdir})
+        
         for eachfile in filenames:
-            if any(map(lambda p: fnmatch.fnmatch(eachfile, p), ignore)):
+            if ignore and any(map(lambda p: fnmatch.fnmatch(eachfile, p), ignore)):
                 logger.debug('%s is ignored', eachfile)
                 continue
             thispath = '/'.join((path, eachfile))
             self.make_attr(thispath, detail, {'link': eachfile, 'name': eachfile})
         
-        detail.setdefault('folder', []).insert(0, {'name': '..', 'link': '../', 'poster':self.application.icon['folder']})
-        return self.render('show.html', detail=detail, path=path)
+        return detail
 
-class FileHandler(_Handler):#, tornado.web.StaticFileHandler):
+class FileHandler(BaseHandler):#, tornado.web.StaticFileHandler):
 
     @tornado.gen.coroutine
-    def get(self, idx, subfoler=None):
-        path = self._get_path(idx, subfoler)
+    def get(self):
+        path = self.get_path()
         uri = self.request.uri
         if os.path.isdir(path) and not uri.endswith('/'):
-            return self.redirect(uri+'/')
+            self.redirect(uri+'/')
+            return 
 
         self.set_header("Accept-Ranges", "bytes")
         mime, _ = mimetypes.guess_type(path)
@@ -144,7 +110,7 @@ class FileHandler(_Handler):#, tornado.web.StaticFileHandler):
             request_range = tornado.httputil._parse_request_range(range_header)
 
         size = os.path.getsize(path)
-        logger.debug('file size: %s', size)
+        logger.debug('file size: %s', format_size(size))
         if request_range:
             start, end = request_range
             if (start is not None and start >= size) or end == 0:
@@ -165,7 +131,6 @@ class FileHandler(_Handler):#, tornado.web.StaticFileHandler):
             # requested. Not only is this semantically correct, but Chrome
             # refuses to play audio if it gets an HTTP 206 in response to
             # ``Range: bytes=0-``.
-            logger.debug('file from %s to %s', start, end)
             if size != (end or size) - (start or 0):
                 self.set_status(206)  # Partial Content
                 self.set_header("Content-Range",
@@ -184,7 +149,6 @@ class FileHandler(_Handler):#, tornado.web.StaticFileHandler):
             content_length = size - start
         else:
             content_length = size
-        logger.debug('content length %s', content_length)
         self.set_header("Content-Length", content_length)
         # -e=deal content length
 
@@ -232,3 +196,4 @@ class FileHandler(_Handler):#, tornado.web.StaticFileHandler):
                     if remaining is not None:
                         assert remaining == 0
                     return
+

@@ -10,7 +10,7 @@ Install
 ```bash
 $ git clone https://github.com/TylerTemp/filenado.git
 $ cd filenado
-$ pip install -r requirement.txt
+$ pip3 install -r requirement.txt
 ```
 
 Usage
@@ -18,7 +18,7 @@ Usage
 
 ```bash
 $ cd path/you/want/to/share
-$ python /path/to/filenado/main.py
+$ python3 /path/to/filenado/main.py
 ```
 ```
 Usage:
@@ -46,10 +46,7 @@ Filenado use the following project
 * [docopt](https://github.com/docopt/docopt)
 * <[Python Cookbook](http://www.amazon.com/Python-Cookbook-Third-David-Beazley/dp/1449340377/ref=sr_1_1?ie=UTF8&qid=1422410102&sr=8-1&keywords=python+cookbook)> (lib/trace_more.py use some code from this book)
 
+Known Issue
+-------------
 
-TODO
-------------
-
-* add seaching files
-* add updating files
-* add deleting files
+If a file/folder contain escaped string like `%20`, then it can not be handled currently.

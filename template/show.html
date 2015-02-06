@@ -2,6 +2,12 @@
 {% block title%}Detail - {{ path }}{% end %}
 {% block body %}
 	<h1>{{ path }}</h1>
+	<p>search file:
+	{% for style, link in search.items() %}
+		<a href="{{ link }}">{{ style }}</a> 
+	{% end %}
+	style
+	</p>
 	{% for type in ("folder", "image", "video", "unknown") %}
 	{# for type, files in detail.items() #}
 		{% set files = detail.get(type, []) %}

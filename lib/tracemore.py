@@ -8,6 +8,13 @@ except ImportError:
     except ImportError:
         from StringIO import StringIO
 
+if sys.version_info[0] < 3:
+    def u(strs):
+        return strs.decode('utf-8')
+else:
+    def u(strs):
+        return strs
+
 _tmp_stream = StringIO()
 
 def print_exc_plus(stream=sys.stdout):
@@ -15,7 +22,7 @@ def print_exc_plus(stream=sys.stdout):
     # code of this mothod is mainly from <Python Cookbook>
     write = stream.write    # assert the mothod exists
     flush = stream.flush
-    tb = sys.exc_info()[2]
+    tp, value, tb = sys.exc_info()
     while tb.tb_next:
         tb = tb.tb_next
     stack = list()
@@ -24,18 +31,25 @@ def print_exc_plus(stream=sys.stdout):
         stack.append(f)
         f = f.f_back
     stack.reverse()
-    traceback.print_exc(None, stream)
-    write('Locals by frame, innermost last\n')
+    try:
+        traceback.print_exc(None, stream)
+    except BaseException as e:
+        write(u("FAILED PRINTING TRACE\n\n"))
+        write(u(str(value)))
+        write(u('\n\n'))
+    # write(u(str(tp.strerror)))
+    # write(u(str(tb)))
+    write(u('Locals by frame, innermost last\n'))
     for frame in stack:
-        write('\nFrame %s in %s at line %s\n' % (frame.f_code.co_name,
-                                                     frame.f_code.co_filename,
-                                                     frame.f_lineno))
+        write(u('\nFrame %s in %s at line %s\n' % (frame.f_code.co_name,
+                                                             frame.f_code.co_filename,
+                                                             frame.f_lineno)))
     for key, value, in frame.f_locals.items():
-        write('\t%20s = ' % key)
+        write(u('\t%20s = ' % key))
         try:
-            write('%s\n'%value)
+            write(u('%s\n'%value))
         except:
-            write('<ERROR WHILE PRINTING VALUE>\n')
+            write(u('<ERROR WHILE PRINTING VALUE>\n'))
     flush()
 
 def get_exc_plus():

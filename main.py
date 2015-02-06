@@ -27,13 +27,14 @@ from handler.exc import UrlFixOr404Handler
 from handler.path import HomeHandler
 from handler.path import FileHandler
 from handler.path import FolderHandler
+from handler.search import SearchHandler
 from handler.ui import FolderModule
 from handler.ui import ImageModule
 from handler.ui import VideoModule
 from handler.ui import AudioModule
 from handler.ui import UnknownModule
 from lib.tracemore import get_exc_plus
-from lib.tool import split_endname
+# from lib.tool import split_endname
 from lib.tool import open
 from lib.bashlog import getlogger
 from lib.bashlog import DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -54,15 +55,23 @@ class Application(tornado.web.Application):
         self.ignore = setting.pop('ignore')
         self.icon = setting.pop('icon')
         self.thisdir = setting.pop('thisdir')
-        self.path_folder = setting.pop('path_folder')
+        self.paths = setting.pop('paths')
         handlers = [
             (r'^/$', RootHandler),
             # (r'^/cmd/?$', CmdHandler),    # an example
+
             (r'^/home/$', HomeHandler),
-            (r'^/home/(\d+)/$', FolderHandler),    # shared folders may have same name under different folder 
-            (r'^/home/(\d+)$', FileHandler),    # so use number instead of name
-            (r'^/home/(\d+)/(.+)/$', FolderHandler),
-            (r'^/home/(\d+)/(.+)$', FileHandler),
+
+            (r'^/home/\d+/$', FolderHandler),    # shared folders may have same name under different folder 
+            (r'^/home/\d+/.+/$', FolderHandler),    # so use number instead of name
+
+            (r'^/home/\d+$', FileHandler),
+            (r'^/home/\d+/.+$', FileHandler),
+
+            (r'^/(fn|re)/$', SearchHandler),
+            (r'^/(fn|re)/\d+/$', SearchHandler),
+            (r'^/(fn|re)/\d+/.+/$', SearchHandler),
+
             (r'.*', UrlFixOr404Handler),
         ]
 
@@ -80,7 +89,33 @@ class Application(tornado.web.Application):
 
 class RootHandler(BaseHandler):
     def get(self):
-        return self.render('root.html', path_folder=self.application.path_folder)
+        details = []
+        for idx, path in enumerate(self.application.paths):
+            info = {}
+            dirname, folder = os.path.split(path)
+            info['position'] = dirname
+            if folder:
+                info['folder'] = folder
+            else:
+                info['folder'] = dirname
+            # if pair[1]:
+            #     info['folder'] = pair[1]
+            #     info['position'] = pair[0]
+            # else:
+            #     info['folder'] = pair[0]
+            #     info['position'] = None
+
+            if os.path.isfile(path):
+                info['explore_link'] = '/home/%s'%idx
+            else:
+                info['explore_link'] = '/home/%s/'%idx
+                info['re_link'] = '/re/%s'%idx
+                info['fn_link'] = '/fn/%s'%idx
+            details.append(info)
+
+        return self.render('root.html', details=details)
+
+
 
 # class CmdHandler(BaseHandler):
 #     def get(self):
@@ -99,7 +134,7 @@ class RootHandler(BaseHandler):
 def main(port, **setting):
     http_server = tornado.httpserver.HTTPServer(Application(setting), xheaders=True)
     http_server.listen(port)
-    logger.debug('[port: %s]Sever started.', port)
+    logger.info('[port: %s]Sever started.', port)
     tornado.ioloop.IOLoop.instance().start()
 
 if __name__ == "__main__":
@@ -130,15 +165,15 @@ if __name__ == "__main__":
 
 
     if root:
-        folders = [os.path.abspath(os.path.normpath(os.path.expanduser(r))).replace('\\', '/') for r in root]
+        paths = [os.path.abspath(os.path.normpath(os.path.expanduser(r))).replace('\\', '/') for r in root]
     else:
-        folders = [os.path.abspath(os.getcwd()).replace('\\', '/')]
+        paths = [os.path.abspath(os.getcwd()).replace('\\', '/')]
 
-    if not all(map(os.path.exists, folders)):
-        raise SystemExit("some path(%s) not found"%folders)
+    if not all(map(os.path.exists, paths)):
+        raise SystemExit("some path(%s) not found"%paths)
 
-    setting['path_folder'] = [split_endname(path) for path in folders]
+    setting['paths'] = paths
 
-    logger.info('share file %s', setting['path_folder'])
+    logger.info('share file %s', setting['paths'])
 
     main(int(args['--port']), **setting)

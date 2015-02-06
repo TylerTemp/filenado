@@ -4,14 +4,31 @@
 	<h1>Welcome to Filenado</h1>
 	<h2><a href="/home/">Explore files</a></h2>
 	<ul>
-		{% for idx, share in enumerate(path_folder) %}
+		{% for each in details %}
 		<li>
-			{% if share[1] %}
-				<a href="/home/{{ idx }}/">{{ share[1] }}</a> at {{ share[0] }}
-			{% else %}
-				<a href="/home/{{ idx }}/">{{ share[0] }}</a>
+			<a href="{{ each['explore_link'] }}">{{ each['folder'] }}</a>
+			{% if each['position'] %}
+				at {{ each['position'] }}
 			{% end %}
 		</li>
+		{% end %}
+	</ul>
+	<hr />
+	<h2>Search files</h2>
+	<ul>
+		{% if len(details) > 1 %}
+		<li>[<a href="/re/">Regular</a> | <a href="/fn/">Unix-Style</a>] All Below</li>
+		{% end %}
+		{% for each in details %}
+			{% if "re_link" in each %}
+			<li>
+				[<a href="{{ each['re_link'] }}">Regular</a> | <a href="{{ each['fn_link'] }}">Unix-Style</a>]
+				<a href="{{ each['explore_link'] }}">{{ each['folder'] }}</a>
+				{% if each['position'] %}
+					at {{ each['position'] }}
+				{% end %}
+			</li>
+			{% end %}
 		{% end %}
 	</ul>
 {% end %}

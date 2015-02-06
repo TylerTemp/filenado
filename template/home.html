@@ -2,7 +2,15 @@
 {% block title%}Home{% end %}
 {% block body %}
 	<h1>Home</h1>
-	{% for type in ("folder", "image", "video", "unknown") %}
+	
+	<p>search file:
+	{% for style, link in search.items() %}
+		<a href="{{ link }}">{{ style }}</a> 
+	{% end %}
+	style
+	</p>
+
+	{% for type in ("folder", "image", "video", "audio","unknown") %}
 		{% set files = detail.get(type, []) %}
 		{% for file in files %}
 			{% if type == "folder" %}
