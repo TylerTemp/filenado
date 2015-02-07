@@ -37,6 +37,7 @@ def print_exc_plus(stream=sys.stdout):
         write(u("FAILED PRINTING TRACE\n\n"))
         write(u(str(value)))
         write(u('\n\n'))
+        logger.error(e)
     # write(u(str(tp.strerror)))
     # write(u(str(tb)))
     write(u('Locals by frame, innermost last\n'))

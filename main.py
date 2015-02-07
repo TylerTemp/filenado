@@ -165,7 +165,12 @@ if __name__ == "__main__":
 
 
     if root:
-        paths = [os.path.abspath(os.path.normpath(os.path.expanduser(r))).replace('\\', '/') for r in root]
+        paths = []
+        for each in root:
+            path = os.path.abspath(os.path.normpath(os.path.expanduser(r))).replace('\\', '/')
+            if path != '/' and path.endswith('/'):
+                path = path[:-1]
+            paths.append(path)
     else:
         paths = [os.path.abspath(os.getcwd()).replace('\\', '/')]
 
